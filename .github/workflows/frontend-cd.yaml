@@ -89,6 +89,12 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Ensure ECR repository exists
+        run: |
+          if ! aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" >/dev/null 2>&1; then
+            aws ecr create-repository --repository-name "$ECR_REPOSITORY"
+          fi
+
       - name: Login to Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -100,6 +106,11 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL }}
         run: |
+          set -euo pipefail
+          if [ -z "$BACKEND_API_URL" ]; then
+            echo "BACKEND_API_URL must be configured as a repository secret." >&2
+            exit 1
+          fi
           docker build --build-arg REACT_APP_MOVIE_API_URL="$BACKEND_API_URL" --tag "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
           docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
@@ -132,7 +143,23 @@ jobs:
       - name: Deploy frontend manifests
         working-directory: starter/frontend/k8s
         run: |
+          set -euo pipefail
           account_id=$(aws sts get-caller-identity --query Account --output text)
           image="${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}"
           kustomize edit set image "frontend=$image"
           kustomize build . | kubectl apply -f -
+          kubectl rollout status deployment/frontend --timeout=180s
+
+      - name: Wait for frontend LoadBalancer
+        run: |
+          for attempt in {1..30}; do
+            hostname=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            if [ -n "$hostname" ]; then
+              echo "Frontend URL: http://${hostname}"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Frontend LoadBalancer hostname was not assigned within 5 minutes." >&2
+          kubectl describe service frontend
+          exit 1
