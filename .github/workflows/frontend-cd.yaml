@@ -11,7 +11,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: frontend
-  EKS_CLUSTER: actual-cluster-name
+  EKS_CLUSTER: movie-picture-cluster
 
 jobs:
   lint:
