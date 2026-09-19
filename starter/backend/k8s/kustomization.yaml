@@ -6,8 +6,8 @@ resources:
 namespace: default
 images:
 - name: backend
-  newName: 444917595510.dkr.ecr.us-east-1.amazonaws.com/backend
-  newTag: tag1
+  newName: 862029645377.dkr.ecr.us-east-1.amazonaws.com/backend
+  newTag: <IMAGE_TAG>
 - name: frontend
   newName: 444917595510.dkr.ecr.us-east-1.amazonaws.com/backend
   newTag: tag1
