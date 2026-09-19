@@ -136,3 +136,5 @@ jobs:
           image="${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}"
           kustomize edit set image "frontend=$image"
           kustomize build . | kubectl apply -f -
+          kubectl rollout restart deployment/frontend
+          kubectl rollout status deployment/frontend --timeout=180s
