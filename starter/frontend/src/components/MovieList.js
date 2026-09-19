@@ -6,8 +6,7 @@ function MovieList({ onMovieClick }) {
   const [movies, setMovies] = useState([]);
 
   useEffect(() => {
-    const apiBaseUrl = process.env.REACT_APP_MOVIE_API_URL
-      .replace(/\/+$/, '')
+    const apiBaseUrl = process.env.REACT_APP_MOVIE_API_URL.replace(/\/+$/, '')
       .replace(/\/movies$/, '');
 
     axios.get(`${apiBaseUrl}/movies`).then((response) => {
